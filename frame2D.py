@@ -1,4 +1,4 @@
-from structure2d import Frame2D
+from plane.systems import Frame2D
 
 # -----------------------------------------------------------
 #                         System1

@@ -1,4 +1,4 @@
-from structure2d import EB2D
+from plane.systems import EB2D
 
 b = 0.1
 h = 0.06

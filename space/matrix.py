@@ -97,6 +97,3 @@ def T_mat(dx, dy, dz):
         T[i * 3:(i + 1) * 3, i * 3:(i + 1) * 3] = R
 
     return T
-
-# print(T_mat(1, 0, 0))
-# print(augment(1, 1, 1, 1, [1, 1], 1))

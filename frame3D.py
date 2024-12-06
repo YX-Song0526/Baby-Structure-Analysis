@@ -1,4 +1,4 @@
-from structrue3d import Frame3D
+from space.systems import Frame3D
 import numpy as np
 
 s = Frame3D()

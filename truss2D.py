@@ -1,4 +1,4 @@
-from structure2d import Truss2D
+from plane.systems import Truss2D
 
 s1 = Truss2D()
 s2 = Truss2D()
