@@ -1,5 +1,6 @@
 import numpy as np
-from plane.matrix import little_mat, tiny_mat, big_mat, trans_mat_for_frame
+from plane.matrices import little_mat, tiny_mat, big_mat, trans_mat_for_frame
+
 
 class Node:
     def __init__(self, x: float, y: float, dof: int = 2):
@@ -21,7 +22,6 @@ class Bar:
                  E: float,
                  A: float,
                  density: float = None):
-        
         self.type = 'b'
         self.node1 = node1
         self.node2 = node2
@@ -49,7 +49,6 @@ class Beam:
                  E: float,
                  Iz: float,
                  density: float = None):
-        
         self.node1 = node1
         self.node2 = node2
         self.E = E
@@ -62,7 +61,7 @@ class Beam:
                             [22 * self.L, 4 * self.L ** 2, 13 * self.L, -3 * self.L ** 2],
                             [54, 13 * self.L, 156, -22 * self.L],
                             [-13 * self.L, -3 * self.L ** 2, -22 * self.L, 4 * self.L ** 2]]) \
-                  if self.density is not None else None
+            if self.density is not None else None
 
 
 class BeamColumn:
@@ -73,7 +72,6 @@ class BeamColumn:
                  A: float,
                  I: float,
                  density: float = None):
-        
         self.type = 'bc'
         self.node1 = node1
         self.node2 = node2
@@ -86,11 +84,14 @@ class BeamColumn:
         self.Phi = np.arctan2((node2.y - node1.y), (node2.x - node1.x))
         self.K_local = big_mat(self.E, self.A, self.I, self.L)
         self.K_global = trans_mat_for_frame(self.Phi).T @ self.K_local @ trans_mat_for_frame(self.Phi)
-        self.Me = self.density * self.A * self.L * \
-                  np.array([[1/3, 0, 0, 1/6, 0, 0],
-                            [0, 13/35, 11 * self.L / 210, 0, 9/70, -13 * self.L / 420],
-                            [0, 11 * self.L / 210, self.L ** 2 / 105, 0, 13 * self.L / 420, -self.L ** 2 / 140],
-                            [1/6, 0, 0, 1/3, 0, 0],
-                            [0, 9/70, 13 * self.L / 420, 0, 13/35, -11 * self.L / 210],
-                            [0, -13 * self.L / 420, -self.L ** 2 / 140, 0, -11 * self.L / 210, self.L ** 2 / 105]]) \
-                  if self.density is not None else None
+        self.Me = self.density * self.A * self.L * np.array([[1 / 3, 0, 0, 1 / 6, 0, 0],
+                                                             [0, 13 / 35, 11 * self.L / 210, 0, 9 / 70,
+                                                              -13 * self.L / 420],
+                                                             [0, 11 * self.L / 210, self.L ** 2 / 105, 0,
+                                                              13 * self.L / 420, -self.L ** 2 / 140],
+                                                             [1 / 6, 0, 0, 1 / 3, 0, 0],
+                                                             [0, 9 / 70, 13 * self.L / 420, 0, 13 / 35,
+                                                              -11 * self.L / 210],
+                                                             [0, -13 * self.L / 420, -self.L ** 2 / 140, 0,
+                                                              -11 * self.L / 210, self.L ** 2 / 105]]) \
+            if self.density is not None else None

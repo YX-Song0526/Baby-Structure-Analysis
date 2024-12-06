@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from scipy.interpolate import CubicHermiteSpline
 from typing import Union
-from plane.components import Node, Bar, Beam, BeamColumn
-from plane.matrix import trans_mat_for_bar, trans_mat_for_frame
+from plane.elements import Node, Bar, Beam, BeamColumn
+from plane.matrices import trans_mat_for_bar, trans_mat_for_frame
 
 
 class Truss2D:
@@ -28,7 +28,7 @@ class Truss2D:
                 E=69e9,
                 A=0.01):
         """添加杆件"""
-        
+
         # 检查节点索引是否在范围内
         if node1_index - 1 < 0 or node2_index - 1 < 0 or node1_index > len(self.nodes) or node2_index > len(self.nodes):
             print(f"Error: One or both nodes for Bar({node1_index}, {node2_index}) do not exist.")

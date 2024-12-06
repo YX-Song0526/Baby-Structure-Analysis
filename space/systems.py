@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
-from space.components import Node, Bar, BeamColumn
+from space.elements import Node, Bar, BeamColumn
 
 
 class Truss3D:
@@ -18,7 +18,7 @@ class Truss3D:
                  x: float,
                  y: float,
                  z: float):
-        
+
         self.nodes.append(Node(x, y, z))
         self.F += [0., 0., 0.]
 
@@ -27,7 +27,7 @@ class Truss3D:
                 node2_index: int,
                 E=69e9,
                 A=0.01):
-        
+
         # 检查节点索引是否在范围内
         if node1_index - 1 < 0 or node2_index - 1 < 0 or node1_index > len(self.nodes) or node2_index > len(self.nodes):
             print(f"Error: One or both nodes for Bar({node1_index}, {node2_index}) do not exist.")
@@ -41,7 +41,7 @@ class Truss3D:
                        Fx=0.,
                        Fy=0.,
                        Fz=0.):
-        
+
         self.F[3 * (node_index - 1)] = Fx
         self.F[3 * (node_index - 1) + 1] = Fy
         self.F[3 * (node_index - 1) + 2] = Fz
@@ -49,7 +49,6 @@ class Truss3D:
     def add_fixed_sup(self, *args):
         for i in args:
             self.fixed_dof += [3 * (i - 1), 3 * (i - 1) + 1, 3 * (i - 1) + 2]
-
 
     def cal_K(self):
         n = len(self.nodes)

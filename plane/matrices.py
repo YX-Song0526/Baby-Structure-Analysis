@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import cos, sin
 
+
 def little_mat(phi):
     return np.array([[cos(phi) ** 2, cos(phi) * sin(phi), -cos(phi) ** 2, -cos(phi) * sin(phi)],
                      [cos(phi) * sin(phi), sin(phi) ** 2, -cos(phi) * sin(phi), -sin(phi) ** 2],

@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import cos, sin, sqrt
+from numpy import cos, sin
 
 
 def little_mat(phi):
@@ -74,7 +74,7 @@ def T_mat(dx, dy, dz):
     lx, mx, nx = dx / L, dy / L, dz / L
     local_x = np.array([lx, mx, nx])
 
-    #print(lx, mx, nx)
+    # print(lx, mx, nx)
 
     if np.allclose([lx, mx, nx], [0.0, 0.0, 1.0]) or np.allclose([lx, mx, nx], [0.0, 0.0, -1.0]):
         # Handle case where direction vector is aligned with global y-axis
