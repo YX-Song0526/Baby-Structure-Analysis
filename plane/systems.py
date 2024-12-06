@@ -98,7 +98,7 @@ class Truss2D:
         # 计算初始位移向量
         U = self.solve()
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(8, 6))
         plt.subplots_adjust(left=0.1, bottom=0.25)  # 为滑动条留出空间
 
         # 绘制原始系统
