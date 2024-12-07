@@ -1,4 +1,4 @@
-from plane.systems import EB2D
+from sa2d.systems import EB2D
 
 b = 0.1
 h = 0.06
@@ -26,14 +26,14 @@ s3 = EB2D()
 s3.add_node(0.0, 0.0)
 s3.add_node(1.0, 0.0)
 s3.add_node(2.0, 0.0)
-s3.add_beam(1, 2, Iz=Iz)
-s3.add_beam(2, 3, Iz=Iz)
-s3.add_single_force(3, -3000)
-s3.add_single_moment(2, 5000)
-s3.add_single_moment(1, -8000)
-s3.add_single_moment(3, 3000)
-s3.add_fixed_sup(1)
-s3.add_simple_sup(2)
+s3.add_beam(1, 2)
+s3.add_beam(2, 3)
 
-s3.plot_system(scale_max=200)
-print(s3.solve_reaction())
+s3.add_simple_sup(1, 3)
+s3.add_distributed_force(1, -50000)
+s3.add_distributed_force(2, -50000)
+
+
+print("Displacement:", s3.solve_disp())
+print("Reaction:", s3.solve_reaction())
+s3.plot_system(scale_max=10000)

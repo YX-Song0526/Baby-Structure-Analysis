@@ -1,4 +1,4 @@
-from plane.systems import Truss2D
+from sa2d.systems import Truss2D
 
 s1 = Truss2D()
 s2 = Truss2D()

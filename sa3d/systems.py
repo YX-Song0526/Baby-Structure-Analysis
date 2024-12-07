@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
-from space.elements import Node, Bar, BeamColumn
+from sa3d.elements import Node, Bar, BeamColumn
 
 
 class Truss3D:

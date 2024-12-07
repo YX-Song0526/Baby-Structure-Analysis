@@ -1,5 +1,5 @@
 import numpy as np
-from space.matrices import augment, T_mat
+from sa3d.matrices import augment, T_mat
 
 
 class Node:

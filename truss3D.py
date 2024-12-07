@@ -1,4 +1,4 @@
-from space.systems import Truss3D
+from sa3d.systems import Truss3D
 
 s = Truss3D()
 

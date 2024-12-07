@@ -1,5 +1,5 @@
 import numpy as np
-from plane.matrices import little_mat, tiny_mat, big_mat, trans_mat_for_frame
+from sa2d.matrices import little_mat, tiny_mat, big_mat, trans_mat_for_frame
 
 
 class Node:

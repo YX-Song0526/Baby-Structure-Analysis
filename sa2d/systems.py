@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from scipy.interpolate import CubicHermiteSpline
 from typing import Union
-from plane.elements import Node, Bar, Beam, BeamColumn
-from plane.matrices import trans_mat_for_bar, trans_mat_for_frame
+from sa2d.elements import Node, Bar, Beam, BeamColumn
+from sa2d.matrices import trans_mat_for_bar, trans_mat_for_frame
 
 
 class Truss2D:
@@ -265,37 +265,60 @@ class EB2D:
         self.FnM[2 * node_index - 1] = M
 
     def add_distributed_force(self,
-                              beam_idx: int,
+                              beam_id: int,
                               q: float):
+        """
+        添加均布载荷
 
-        if beam_idx - 1 < 0 or beam_idx > len(self.beams):
-            print(f"Error: Beam({beam_idx}) does not exist.")
+        Args:
+            beam_id: 梁单元编号
+            q: 均布载荷，符号表示方向，正为向上负为向下
+
+        """
+
+        if beam_id - 1 < 0 or beam_id > len(self.beams):
+            print(f"Error: Beam({beam_id}) does not exist.")
             return
 
-        beam = self.beams[beam_idx - 1]
-        L = beam.L
-
-        F_eq = q * L / 2.0
-        M_eq = q * L ** 2 / 8.0
-
+        beam = self.beams[beam_id - 1]
         node1_idx = self.nodes.index(beam.node1)
         node2_idx = self.nodes.index(beam.node2)
 
-        self.FnM[2 * node1_idx] += F_eq  # 起始节点的水平等效力
-        self.FnM[2 * node2_idx] += F_eq  # 终止节点的水平等效力
+        # 等效节点力和节点力矩
+        L = beam.L
+        F_eq = q * L / 2.0
+        M_eq = q * L ** 2 / 12.0
+
+        self.FnM[2 * node1_idx] += F_eq  # 起始节点的等效力
+        self.FnM[2 * node2_idx] += F_eq  # 终止节点的等效力
 
         self.FnM[2 * node1_idx + 1] += M_eq  # 起始节点的等效弯矩
         self.FnM[2 * node2_idx + 1] -= M_eq  # 终止节点的等效弯矩
 
     def add_fixed_sup(self, *args):
+        """
+        添加固定铰支座
+
+        Args:
+            *args: 节点编号，可以输入多个
+
+        """
         for i in args:
             self.fixed_dof += [2 * (i - 1), 2 * (i - 1) + 1]
 
     def add_simple_sup(self, *args):
+        """
+        添加简单铰支座
+
+        Args:
+            *args: 节点编号，可以添加多个
+
+        """
         for i in args:
             self.fixed_dof += [2 * (i - 1)]
 
     def cal_K_total(self):
+        """组装系统总体刚度矩阵"""
         n = len(self.nodes)
         K = np.zeros((2 * n, 2 * n))
         for beam in self.beams:
@@ -349,11 +372,19 @@ class EB2D:
         return R
 
     def plot_system(self, initial_scale=1.0, scale_max=1000.0):
+        """
+        变形结果可视化，可将位移放大显示
+
+        Args:
+            initial_scale: 初始放大倍数
+            scale_max: 最高放大倍数
+
+        """
         # 计算节点位移
         U = self.solve_disp()
 
         # 创建图形和滑块
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(8, 6))
         plt.subplots_adjust(left=0.1, bottom=0.3)  # 为滑动条留出空间
 
         # 绘制原始系统

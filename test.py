@@ -1,4 +1,4 @@
-from plane.elements import *
+from sa2d.elements import *
 
 n1 = Node(0, 0)
 n2 = Node(4, 3)
