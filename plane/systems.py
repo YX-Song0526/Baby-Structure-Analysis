@@ -344,7 +344,7 @@ class EB2D:
         Q = K @ U
         f = np.array(self.FnM)
         R = Q - f
-        R[np.abs(Q) < tolerance] = 0
+        R[np.abs(R) < tolerance] = 0
 
         return R
 
