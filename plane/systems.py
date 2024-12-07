@@ -18,7 +18,14 @@ class Truss2D:
     def add_node(self,
                  x: float,
                  y: float):
-        """添加节点"""
+        """
+        往系统中添加节点
+
+        Args:
+            x: 节点x坐标值
+            y: 节点y坐标值
+
+        """
         self.nodes.append(Node(x, y))
         self.F += [0., 0.]
 
@@ -27,30 +34,60 @@ class Truss2D:
                 node2_index: int,
                 E=69e9,
                 A=0.01):
-        """添加杆件"""
+        """
+        往系统中添加杆单元
+
+        Args:
+            node1_index: 节点1编号
+            node2_index: 节点2编号
+            E: 杨氏模量
+            A: 截面积
+
+        """
 
         # 检查节点索引是否在范围内
         if node1_index - 1 < 0 or node2_index - 1 < 0 or node1_index > len(self.nodes) or node2_index > len(self.nodes):
             print(f"Error: One or both nodes for Bar({node1_index}, {node2_index}) do not exist.")
             return
 
-        # 添加新的 Bar
+        # 添加新的杆单元
         self.bars.append(Bar(self.nodes[node1_index - 1], self.nodes[node2_index - 1], E, A))
 
     def add_node_force(self, node_index: int,
                        Fx=0.,
                        Fy=0.):
-        """添加节点力"""
+        """
+        添加节点力
+
+        Args:
+            node_index: 节点编号
+            Fx: x方向的节点力
+            Fy: y方向的节点力
+
+        """
         self.F[2 * (node_index - 1)] = Fx
         self.F[2 * (node_index - 1) + 1] = Fy
 
     def add_fixed_sup(self, *args):
-        """添加固定铰支座"""
+        """
+        添加固定铰支座
+
+        Args:
+            *args: 节点编号，可输入多个
+
+        """
         for i in args:
             self.fixed_dof += [2 * (i - 1), 2 * (i - 1) + 1]
 
     def add_movable_sup(self, *args, fixed: str):
-        """添加活动铰支座"""
+        """
+        添加活动铰支座
+
+        Args:
+            *args: 节点编号，可输入多个
+            fixed: 选择固定哪一方向的自由度，若固定x方向则输入'x'，固定y方向则'y'
+
+        """
         for i in args:
             if fixed == 'x':
                 self.fixed_dof += [2 * (i - 1)]
@@ -58,7 +95,13 @@ class Truss2D:
                 self.fixed_dof += [2 * (i - 1) + 1]
 
     def cal_K_total(self):
-        """计算系统总体刚度矩阵"""
+        """
+        计算系统总体刚度矩阵
+
+        Returns:
+            n×n矩阵， n为系统自由度数目
+
+        """
 
         n = len(self.nodes)
         K = np.zeros((2 * n, 2 * n))
@@ -72,8 +115,17 @@ class Truss2D:
                     K[dof[i], dof[j]] += K_global[i, j]
         return K
 
-    def solve(self, tolerance=1e-10):
-        """求解节点位移"""
+    def solve_disp(self, tolerance=1e-10):
+        """
+        求解节点位移
+
+        Args:
+            tolerance: 小于该值的位移会被认为是0
+
+        Returns:
+            n维向量，n为系统自由度数
+
+        """
 
         n = len(self.nodes)
         free_dof = list((set(range(2 * n)).difference(self.fixed_dof)))
@@ -93,10 +145,17 @@ class Truss2D:
     def plot_system(self,
                     initial_scale=1.0,
                     scale_max=10000.0):
-        """可视化"""
+        """
+        可视化函数，可放大显示节点位移
+
+        Args:
+            initial_scale: 初始放大倍数
+            scale_max: 最高放大倍数
+
+        """
 
         # 计算初始位移向量
-        U = self.solve()
+        U = self.solve_disp()
 
         fig, ax = plt.subplots(figsize=(8, 6))
         plt.subplots_adjust(left=0.1, bottom=0.25)  # 为滑动条留出空间
@@ -171,29 +230,43 @@ class EB2D:
     def __init__(self):
         self.nodes = []
         self.beams = []
-        self.QnM = []
+        self.FnM = []
         self.fixed_dof = []
 
-    def add_node(self, x: float, y: float):
+    def add_node(self,
+                 x: float,
+                 y: float):
         self.nodes.append(Node(x, y))
-        self.QnM += [0., 0.]
+        self.FnM += [0., 0.]
 
-    def add_beam(self, node1_index: int, node2_index: int, E=69e9, Iz=0.01):
+    def add_beam(self,
+                 node1_index: int,
+                 node2_index: int,
+                 E=69e9,
+                 Iz=0.01):
         # 检查节点索引是否在范围内
         if node1_index - 1 < 0 or node2_index - 1 < 0 or node1_index > len(self.nodes) or node2_index > len(self.nodes):
             print(f"Error: One or both nodes for Bar({node1_index}, {node2_index}) do not exist.")
             return
 
         # 添加新的 Bar
-        self.beams.append(Beam(self.nodes[node1_index - 1], self.nodes[node2_index - 1], E, Iz))
+        self.beams.append(Beam(self.nodes[node1_index - 1],
+                               self.nodes[node2_index - 1],
+                               E, Iz))
 
-    def add_single_force(self, node_index: int, F=0.):
-        self.QnM[2 * (node_index - 1)] = F
+    def add_single_force(self,
+                         node_index: int,
+                         F=0.):
+        self.FnM[2 * (node_index - 1)] = F
 
-    def add_single_moment(self, node_index: int, M=0.):
-        self.QnM[2 * node_index - 1] = M
+    def add_single_moment(self,
+                          node_index: int,
+                          M=0.):
+        self.FnM[2 * node_index - 1] = M
 
-    def add_distributed_force(self, beam_idx: int, q: float):
+    def add_distributed_force(self,
+                              beam_idx: int,
+                              q: float):
 
         if beam_idx - 1 < 0 or beam_idx > len(self.beams):
             print(f"Error: Beam({beam_idx}) does not exist.")
@@ -208,11 +281,11 @@ class EB2D:
         node1_idx = self.nodes.index(beam.node1)
         node2_idx = self.nodes.index(beam.node2)
 
-        self.QnM[2 * node1_idx] += F_eq  # 起始节点的水平等效力
-        self.QnM[2 * node2_idx] += F_eq  # 终止节点的水平等效力
+        self.FnM[2 * node1_idx] += F_eq  # 起始节点的水平等效力
+        self.FnM[2 * node2_idx] += F_eq  # 终止节点的水平等效力
 
-        self.QnM[2 * node1_idx + 1] += M_eq  # 起始节点的等效弯矩
-        self.QnM[2 * node2_idx + 1] -= M_eq  # 终止节点的等效弯矩
+        self.FnM[2 * node1_idx + 1] += M_eq  # 起始节点的等效弯矩
+        self.FnM[2 * node2_idx + 1] -= M_eq  # 终止节点的等效弯矩
 
     def add_fixed_sup(self, *args):
         for i in args:
@@ -222,7 +295,7 @@ class EB2D:
         for i in args:
             self.fixed_dof += [2 * (i - 1)]
 
-    def cal_K(self):
+    def cal_K_total(self):
         n = len(self.nodes)
         K = np.zeros((2 * n, 2 * n))
         for beam in self.beams:
@@ -235,13 +308,20 @@ class EB2D:
                     K[dof[i], dof[j]] += Ke[i, j]
         return K
 
-    def solve_una(self, tolerance=1e-10):
+    def solve_disp(self, tolerance=1e-10):
+        """
+        求解挠度和转角
+
+        Args:
+            tolerance: 小于该值的位移将会被认为是0
+
+        """
         n = len(self.nodes)
         free_dof = list((set(range(2 * n)).difference(self.fixed_dof)))
 
-        K = self.cal_K()
+        K = self.cal_K_total()
         K_ff = K[np.ix_(free_dof, free_dof)]
-        F_ff = np.array([self.QnM[i] for i in free_dof])
+        F_ff = np.array([self.FnM[i] for i in free_dof])
         U_ff = np.linalg.pinv(K_ff) @ F_ff
 
         U_ff[np.abs(U_ff) < tolerance] = 0
@@ -251,18 +331,26 @@ class EB2D:
 
         return U
 
-    def solve_qnm(self, tolerance=1e-10):
-        n = len(self.nodes)
-        K = self.cal_K()
-        U = self.solve_una()
-        Q = K @ U
-        Q[np.abs(Q) < tolerance] = 0
+    def solve_reaction(self, tolerance=1e-10):
+        """
+        求解支座反力
 
-        return Q
+        Args:
+            tolerance: 小于该值的位移将会被认为是0
+
+        """
+        K = self.cal_K_total()
+        U = self.solve_disp()
+        Q = K @ U
+        f = np.array(self.FnM)
+        R = Q - f
+        R[np.abs(Q) < tolerance] = 0
+
+        return R
 
     def plot_system(self, initial_scale=1.0, scale_max=1000.0):
         # 计算节点位移
-        U = self.solve_una()
+        U = self.solve_disp()
 
         # 创建图形和滑块
         fig, ax = plt.subplots()
