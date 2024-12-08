@@ -37,6 +37,6 @@ U = s1.solve_disp()
 U2 = s2.solve_disp()
 
 # print("刚度矩阵:\n", s2.cal_K())
-print("节点位移:\n", U)
+# print("节点位移:\n", U)
 
-s1.plot_system(scale_max=5000)
+# s1.plot_system(scale_max=5000)

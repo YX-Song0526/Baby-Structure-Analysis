@@ -30,12 +30,12 @@ s.add_fixed_sup(1, 2, 3, 4)
 s.add_single_moment(6, Mx=0, My=2000000, Mz=-1500000)
 # s.add_single_force(8, Fy=5000000)
 
-# 求解
-u = s.solve_una()
-# q = s.solve_qnm()
+# # 求解
+# u = s.solve_una()
+# # q = s.solve_qnm()
 
-# 打印结果
-print('节点位移:',u)
+# # 打印结果
+# print('节点位移:',u)
 
-# 可视化
-s.plot_system(scale_max=1000)
+# # 可视化
+# s.plot_system(scale_max=1000)
