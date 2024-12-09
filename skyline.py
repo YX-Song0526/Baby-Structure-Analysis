@@ -13,7 +13,7 @@ def skyline_storage(A: ndarray):
 
     Returns:
         tuple: (values, pointers)
-               - values 是 Skyline 存储的非零值数组，
+               - values 是轮廓线内元素数组，
                - pointers 是对角线元素在 values 中的索引数组。
     """
     values = []
@@ -26,10 +26,12 @@ def skyline_storage(A: ndarray):
         for j in range(i + 1):
             if A[i, j] != 0:
                 first_nonzero = j
+                # print(first_nonzero)
                 break
 
         if first_nonzero != -1:
             values.extend(A[i, first_nonzero:i + 1])
+            # print(A[i, first_nonzero:i + 1])
             edge.append(first_nonzero)
 
         pointers.append(len(values) - 1)
@@ -49,48 +51,37 @@ def get_semi_bandwidth(A: ndarray):
     return semi_bandwidth
 
 
-def ldl_with_skyline(K: ndarray):
-    KK = K.copy()
-    K_sky, pointer, edge = skyline_storage(K)
+def skyline_to_full_matrix(values, pointers):
+    """
+    将 Skyline 压缩存储的矩阵转换为普通的矩阵
 
+    Args:
+        values: 轮廓线内元素数组
+        pointers: 对角线元素在 values 中的索引数组
+
+    Returns: n维矩阵 (np.ndarray)
+
+    """
+
+
+
+def ldl_modified_with_skyline(K):
     n = len(K)
 
-    for j in range(1, n):
-        # 计算g_ij
-        for i in range(edge[j], j):
-            sigma = 0
-            for k in range(i):
-                sigma += K_sky[pointer[i]-(i - k)] * K_sky[pointer[j]-(j - k)]
-            K_sky[pointer[j] - (j - i)] -= sigma
-            KK[j, i] -= sigma
+    K_sky, pointer, edge = skyline_storage(K)
 
-        # 计算d_jj
-        sigma = 0
+    for j in range(n):
+        # 求g_ij
+        for i in range(edge[j], j):
+            for k in range(max(edge[i], edge[j]), i):
+                K_sky[pointer[j] - (j - i)] -= K_sky[pointer[i] - (i - k)] * K_sky[pointer[j] - (j - k)]
+
+        # 求D_ij
         for k in range(edge[j], j):
-            sigma += K_sky[pointer[j]-(j - k)] ** 2 / K_sky[pointer[k]]
-        K_sky[pointer[j]] -= sigma
-        KK[j, j] -= sigma
+            K_sky[pointer[j]] -= K_sky[pointer[j] - (j - k)] ** 2 / K_sky[pointer[k]]
 
-        # 计算L_ij
+        # 求L_ij
         for i in range(edge[j], j):
-            K_sky[pointer[j] - (j - i)] /= K_sky[pointer[i]]
-            KK[j, i] /= K_sky[pointer[i]]
+            K_sky[pointer[j] - (j - i)] = K_sky[pointer[j] - (j - i)] / K_sky[pointer[i]]
 
-    return K_sky, KK
-
-# 示例矩阵
-A = np.array([
-    [4, 1, 2, 0],
-    [1, 3, 0, 0],
-    [2, 0, 6, 5],
-    [0, 0, 5, 8]
-])
-
-# values, pointers, edge = skyline_storage(A)
-# print("Values:", values)
-# print("Pointers:", pointers)
-# print("Edges:", edge)
-
-
-
-
+    return K_sky
