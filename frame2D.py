@@ -100,7 +100,7 @@ s3.add_fixed_sup(3, 4)
 #                     Solution OUTPUT
 # -----------------------------------------------------------
 
-print("节点位移：", s1.solve_una())
+print("节点位移：", s1.solve_disp())
 # print("节点力：", s3.solve_qnm())
 #
 # local_force = s3.cal_element_nodal_force()

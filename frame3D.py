@@ -36,7 +36,7 @@ u = s.solve_disp()
 # # q = s.solve_qnm()
 
 # # 打印结果
-print('节点位移:',u)
+print('节点位移:', u)
 
 # # 可视化
 s.plot(scale_max=200)

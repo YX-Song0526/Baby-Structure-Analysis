@@ -478,7 +478,7 @@ class Frame2D:
     def __init__(self):
         self.nodes: list[Node] = []
         self.elements: list[Union[Bar, BeamColumn]] = []
-        self.Q = None
+        self.FnM = None
         self.fixed_dof = []
         self.node_indices = []
 
@@ -520,20 +520,20 @@ class Frame2D:
         self.elements.append(BeamColumn(self.nodes[node1_idx - 1], self.nodes[node2_idx - 1], E, A, I))
 
     def assign_dof(self):
-        self.Q = []
+        self.FnM = []
         current_index = 0
         for node in self.nodes:
             self.node_indices.append(current_index)
-            self.Q += node.dof * [0.0]
+            self.FnM += node.dof * [0.0]
             current_index += node.dof
-        self.Q = np.array(self.Q)
+        self.FnM = np.array(self.FnM)
 
     def add_single_force(self, node_idx: int, Fx=0., Fy=0.):
-        if self.Q is None:
+        if self.FnM is None:
             self.assign_dof()
 
         index = self.node_indices[node_idx - 1]
-        self.Q[index], self.Q[index + 1] = Fx, Fy
+        self.FnM[index], self.FnM[index + 1] = Fx, Fy
 
     def add_single_moment(self, node_idx: int, M=0.):
 
@@ -541,11 +541,11 @@ class Frame2D:
             print("Warning: Can not add moment on a bar")
             return
 
-        if self.Q is None:
+        if self.FnM is None:
             self.assign_dof()
 
         index = self.node_indices[node_idx - 1]
-        self.Q[index + 2] = M
+        self.FnM[index + 2] = M
 
     def add_distributed_force(self, bc_idx: int, q: float):
 
@@ -553,7 +553,7 @@ class Frame2D:
             print(f"Error: BeamColumn({bc_idx}) does not exist.")
             return
 
-        if self.Q is None:
+        if self.FnM is None:
             self.assign_dof()
 
         bc = self.elements[bc_idx - 1]
@@ -566,13 +566,13 @@ class Frame2D:
 
         index1, index2 = self.node_indices[self.nodes.index(bc.node1)], self.node_indices[self.nodes.index(bc.node2)]
 
-        self.Q[index1] += Q_eq_global[0]  # 起始节点的水平等效力
-        self.Q[index1 + 1] += Q_eq_global[1]  # 起始节点的竖直等效力
-        self.Q[index1 + 2] += Q_eq_global[2]  # 起始节点的等效弯矩
+        self.FnM[index1] += Q_eq_global[0]  # 起始节点的水平等效力
+        self.FnM[index1 + 1] += Q_eq_global[1]  # 起始节点的竖直等效力
+        self.FnM[index1 + 2] += Q_eq_global[2]  # 起始节点的等效弯矩
 
-        self.Q[index2] += Q_eq_global[3]  # 起始节点的水平等效力
-        self.Q[index2 + 1] += Q_eq_global[4]  # 起始节点的竖直等效力
-        self.Q[index2 + 2] += Q_eq_global[5]  # 起始节点的等效弯矩
+        self.FnM[index2] += Q_eq_global[3]  # 起始节点的水平等效力
+        self.FnM[index2 + 1] += Q_eq_global[4]  # 起始节点的竖直等效力
+        self.FnM[index2 + 2] += Q_eq_global[5]  # 起始节点的等效弯矩
 
     def add_fixed_sup(self, *args):
         for i in args:
@@ -587,9 +587,9 @@ class Frame2D:
             index = sum(node.dof for node in self.nodes[:i - 1])
             self.fixed_dof += [index, index + 1]
 
-    def cal_K(self):
+    def cal_K_total(self):
 
-        n = len(self.Q)
+        n = len(self.FnM)
         K = np.zeros((n, n))
 
         for element in self.elements:
@@ -615,14 +615,23 @@ class Frame2D:
 
         return K
 
-    def solve_una(self, tolerance=1e-10):
-        n = len(self.Q)
+    def solve_disp(self, tolerance=1e-10):
+        """
+        求解节点位移
+
+        Args:
+            tolerance: 小于该值的位移将会被认为是0
+
+        Returns:
+
+        """
+        n = len(self.FnM)
         free_dof = list((set(range(n)).difference(self.fixed_dof)))
 
-        K = self.cal_K()
+        K = self.cal_K_total()
 
         K_ff = K[np.ix_(free_dof, free_dof)]
-        F_ff = np.array([self.Q[i] for i in free_dof])
+        F_ff = np.array([self.FnM[i] for i in free_dof])
         U_ff = np.linalg.solve(K_ff, F_ff)
 
         U_ff[np.abs(U_ff) < tolerance] = 0
@@ -632,14 +641,24 @@ class Frame2D:
 
         return U
 
-    def solve_qnm(self, tolerance=1e-10):
-        n = len(self.Q)
-        K = self.cal_K()
-        U = self.solve_una()
-        Q = K @ U
-        Q[np.abs(Q) < tolerance] = 0
+    def solve_reaction(self, tolerance=1e-10):
+        """
+        求解反力
 
-        return Q
+        Args:
+            tolerance: 小于该值的力将会被认为是0
+
+        Returns:
+
+        """
+        K = self.cal_K_total()
+        U = self.solve_disp()
+        Q = K @ U
+        f = np.array(self.FnM)
+        R = Q - f
+        R[np.abs(R) < tolerance] = 0
+
+        return R
 
     def get_dof_start(self, element: Union[Bar, BeamColumn]):
         # Extract the global indices for the degrees of freedom of this element's nodes
@@ -650,7 +669,10 @@ class Frame2D:
         return dof1_start, dof2_start
 
     def cal_element_nodal_force(self):
-        U = self.solve_una()
+        """
+        求解单元的节点力
+        """
+        U = self.solve_disp()
 
         element_nodal_force_local = []
 
@@ -680,23 +702,10 @@ class Frame2D:
 
         return element_nodal_force_local
 
-    def get_element_deformed_pos(self, element: Union[Bar, BeamColumn], U: np.ndarray):
-        n1_idx, n2_idx = self.nodes.index(element.node1), self.nodes.index(element.node2)
-        index1, index2 = self.node_indices[n1_idx], self.node_indices[n2_idx]
-        x = [element.node1.x + U[index1],
-             element.node2.x + U[index2]]
-
-        y = [element.node1.y + U[index1 + 1],
-             element.node2.y + U[index2 + 1]]
-
-        if element.type == 'b':
-            return [x, y]
-        elif element.type == 'bc':
-            theta = [U[index1 + 2],
-                     U[index2 + 2]]
-            return [x, y, theta]
-
     def get_max_stress(self):
+        """
+        求解单元最大应力数组
+        """
         R = 0.05
         ele_max_stress = []
         ele_nodal_force = self.cal_element_nodal_force()
@@ -721,7 +730,7 @@ class Frame2D:
 
     def plot_system(self, initial_scale=1.0, scale_max=1000.0):
         # 计算节点位移
-        U = self.solve_una()
+        U = self.solve_disp()
 
         fig, ax = plt.subplots(figsize=(8, 8))
         plt.subplots_adjust(left=0.1, bottom=0.3)  # 为滑动条留出空间
