@@ -4,7 +4,6 @@ from frame3D import s
 import pandas as pd
 
 
-
 def ldl_raw(K):
     n = len(K)
     L = np.eye(n)
@@ -16,6 +15,7 @@ def ldl_raw(K):
         D[j] = K[j, j] - np.sum(L[j, :j] * D[:j] * L[j, :j])
 
     return L, D
+
 
 def ldl_modified(K):
     n = len(K)
@@ -46,6 +46,7 @@ def ldl_with_skyline(K):
 
     return L, D
 
+
 def ldl_modified_with_skyline(K):
     n = len(K)
 
@@ -62,7 +63,6 @@ def ldl_modified_with_skyline(K):
             for k in range(max(edge[i], edge[j]), i):
                 K_sky[pointer[j] - (j - i)] -= K_sky[pointer[i] - (i - k)] * K_sky[pointer[j] - (j - k)]
 
-
         # 求D_ij
         D[j] = K[j, j] - np.sum(g[j, edge[j]:j] ** 2 / D[edge[j]:j])
 
@@ -75,7 +75,3 @@ def ldl_modified_with_skyline(K):
             K_sky[pointer[j] - (j - i)] = K_sky[pointer[j] - (j - i)] / K_sky[pointer[i]]
 
     return L, D, K_sky
-
-print(list(range(7, 3)))
-
-

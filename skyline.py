@@ -1,7 +1,6 @@
 import numpy as np
 from numpy import ndarray
-from truss2D import s1
-import pandas as pd
+from frame3D import s
 
 
 def skyline_storage(A: ndarray):
@@ -36,6 +35,9 @@ def skyline_storage(A: ndarray):
 
         pointers.append(len(values) - 1)
 
+    # 确保values的值为浮点数
+    values = np.array(values, dtype=np.float64)
+
     return values, pointers, edge
 
 
@@ -51,25 +53,18 @@ def get_semi_bandwidth(A: ndarray):
     return semi_bandwidth
 
 
-def skyline_to_full_matrix(values, pointers):
-    """
-    将 Skyline 压缩存储的矩阵转换为普通的矩阵
-
-    Args:
-        values: 轮廓线内元素数组
-        pointers: 对角线元素在 values 中的索引数组
-
-    Returns: n维矩阵 (np.ndarray)
-
-    """
-
-
-
-def ldl_modified_with_skyline(K):
+def solve(K, F):
+    """使用 Skyline 的 LDL 算法求解方程"""
     n = len(K)
+    Fc = F.copy()
 
+    # 确保Fc的值为浮点数
+    Fc = np.array(Fc, dtype=np.float64)
+
+    # Skyline 压缩存储
     K_sky, pointer, edge = skyline_storage(K)
 
+    # -------------------------LDL分解-------------------------
     for j in range(n):
         # 求g_ij
         for i in range(edge[j], j):
@@ -84,4 +79,17 @@ def ldl_modified_with_skyline(K):
         for i in range(edge[j], j):
             K_sky[pointer[j] - (j - i)] = K_sky[pointer[j] - (j - i)] / K_sky[pointer[i]]
 
-    return K_sky
+    # -------------------------向前消去-------------------------
+    for j in range(1, n):
+        for i in range(edge[j], j):
+            Fc[j] -= K_sky[pointer[j] - (j - i)] * Fc[i]
+
+    # -------------------------回代求U-------------------------
+    for i in range(n):
+        Fc[i] /= K_sky[pointer[i]]
+
+    for i in range(n - 1, 0, -1):
+        for j in range(edge[i], i):
+            Fc[j] = Fc[j] - K_sky[pointer[i] - (i - j)] * Fc[i]
+
+    return Fc

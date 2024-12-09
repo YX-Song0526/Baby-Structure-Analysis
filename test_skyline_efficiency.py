@@ -1,56 +1,20 @@
+import skyline as sky
 import numpy as np
-from scipy.linalg import ldl
-import time
-from test_skyline_ldl import ldl_raw, ldl_modified  # 导入你在 ldl.py 中定义的函数
-from skyline import ldl_modified_with_skyline
-from truss2D import s1
 from frame3D import s
+import time
 
+K = s.cal_K()
+F = s.QnM
 
-def test_ldl_performance(A):
-    # 你提供的矩阵 A 将用于性能测试
-    print(f"Testing matrix of size: {A.shape[0]}x{A.shape[1]}")
+start_time = time.time()
+u = sky.solve(K, F)
+skyline_time = time.time() - start_time
 
-    # 测试 ldl_raw
-    start_time = time.time()
-    l, d = ldl_raw(A)
-    ldl_raw_time = time.time() - start_time
+start_time = time.time()
+u1 = np.linalg.solve(K, F)
+numpy_time = time.time() - start_time
 
-    # 测试 ldl_modified
-    start_time = time.time()
-    l_modified, d_modified = ldl_modified(A)
-    ldl_modified_time = time.time() - start_time
+# --------------------------- 结果输出与对比 ---------------------------
+print(f"Skyline LDL 分解求解时间: {skyline_time:.6f}秒")
+print(f"NumPy 内置求解时间: {numpy_time:.6f}秒")
 
-    # 测试 ldl_modified_with_skyline
-    start_time = time.time()
-    K = ldl_modified_with_skyline(A)
-    ldl_modified_skyline_time = time.time() - start_time
-
-    # 测试 ldl
-    start_time = time.time()
-    l, d, _ = ldl(A)
-    ldl_time = time.time() - start_time
-
-    # 输出结果
-    print(f"  LDL time: {ldl_raw_time:.4f} seconds")
-    print(f"  LDL_modified time: {ldl_modified_time:.4f} seconds")
-    print(f"  LDL_modified_Skyline time: {ldl_modified_skyline_time:.4f} seconds")
-    print(f"  Scipy LDL time: {ldl_time:.4f} seconds")
-
-    # 返回结果
-    return {
-        'size': A.shape[0],
-        'ldl_raw_time': ldl_raw_time,
-        'ldl_modified_time': ldl_modified_time,
-        'ldl_modified_skyline_time': ldl_modified_skyline_time,
-        'scipy_ldl_time': ldl_time
-    }
-
-# 调用性能测试
-if __name__ == "__main__":
-    # 指定一个矩阵进行测试
-    A = s.cal_K()
-
-    # 进行性能测试
-    test_results = test_ldl_performance(A)
-    print(test_results)
