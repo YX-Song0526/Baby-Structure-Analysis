@@ -32,11 +32,11 @@ s.add_fixed_sup(1, 2, 3, 4)
 s.add_single_force(6, Fx=5000000, Fy=-5000000)
 
 # # 求解
-# u = s.solve_una()
+u = s.solve_disp()
 # # q = s.solve_qnm()
 
 # # 打印结果
-# print('节点位移:',u)
+print('节点位移:',u)
 
 # # 可视化
-s.plot_system(scale_max=200)
+s.plot(scale_max=200)
