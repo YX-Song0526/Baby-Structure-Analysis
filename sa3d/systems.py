@@ -5,12 +5,13 @@ from matplotlib.widgets import Slider
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from sa3d.elements import Node, Bar, BeamColumn
+from sa3d.plot import plot_system
 
 
 class Truss3D:
     def __init__(self):
-        self.nodes = []
-        self.bars = []
+        self.nodes: list[Node] = []
+        self.bars: list[Bar] = []
         self.F = []
         self.fixed_dof = []
 
@@ -108,7 +109,7 @@ class Truss3D:
             ax.plot(node.x, node.y, node.z, 'ro')
             ax.text(node.x, node.y, node.z, f'{i + 1}', fontsize=12)
 
-        # 设置坐标范围（可以选择根据最大位移来动态计算）
+        # 设置坐标范围，并确保比例为1:1:1，添加边距
         node_x = [node.x for node in self.nodes]
         node_y = [node.y for node in self.nodes]
         node_z = [node.z for node in self.nodes]
@@ -116,9 +117,20 @@ class Truss3D:
         y_min, y_max = min(node_y), max(node_y)
         z_min, z_max = min(node_z), max(node_z)
 
-        ax.set_xlim(x_min, x_max)
-        ax.set_ylim(y_min, y_max)
-        ax.set_zlim(z_min, z_max)
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+        z_range = z_max - z_min
+        max_range = max(x_range, y_range, z_range)
+
+        x_mid = (x_max + x_min) / 2
+        y_mid = (y_max + y_min) / 2
+        z_mid = (z_max + z_min) / 2
+
+        ax.set_xlim(x_mid - max_range / 2, x_mid + max_range / 2)
+        ax.set_ylim(y_mid - max_range / 2, y_mid + max_range / 2)
+        ax.set_zlim(z_mid - max_range / 2, z_mid + max_range / 2)
+
+        ax.set_box_aspect([1, 1, 1])  # 确保坐标轴比例为 1:1:1
 
         # 设置图例
         ax.legend()
@@ -153,6 +165,15 @@ class Truss3D:
         update(initial_scale)
 
         plt.show()
+
+    def plot(self, initial_scale=1.0, scale_max=10000.0):
+        U = self.solve_disp()
+        plot_system(self.bars,
+                    self.nodes,
+                    U,
+                    3,
+                    initial_scale,
+                    scale_max)
 
 
 class Frame3D:
