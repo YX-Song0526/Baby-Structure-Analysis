@@ -50,7 +50,7 @@ class Truss3D:
         for i in args:
             self.fixed_dof += [3 * (i - 1), 3 * (i - 1) + 1, 3 * (i - 1) + 2]
 
-    def cal_K(self):
+    def cal_K_total(self):
         n = len(self.nodes)
         K = np.zeros((3 * n, 3 * n))
         for bar in self.bars:
@@ -63,11 +63,11 @@ class Truss3D:
                     K[dof[i], dof[j]] += K_global[i, j]
         return K
 
-    def solve(self, tolerance=1e-10):
+    def solve_disp(self, tolerance=1e-10):
         n = len(self.nodes)
         free_dof = list((set(range(3 * n)).difference(self.fixed_dof)))
 
-        K = self.cal_K()
+        K = self.cal_K_total()
         K_ff = K[np.ix_(free_dof, free_dof)]
         F_ff = np.array([self.F[i] for i in free_dof])
         U_ff = np.linalg.pinv(K_ff) @ F_ff
@@ -81,7 +81,7 @@ class Truss3D:
 
     def plot_system(self, initial_scale=1.0, scale_max=10000.0):
         # 计算初始位移向量
-        U = self.solve()
+        U = self.solve_disp()
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')  # 3D axes
@@ -159,7 +159,7 @@ class Frame3D:
     def __init__(self):
         self.nodes = []
         self.elements = []
-        self.QnM = None
+        self.FnM = None
         self.fixed_dof = []
         self.node_indices = []
 
@@ -188,20 +188,20 @@ class Frame3D:
         self.elements.append(BeamColumn(self.nodes[node1_idx - 1], self.nodes[node2_idx - 1], E, A, G, J, I))
 
     def assign_dof(self):
-        self.QnM = []
+        self.FnM = []
         current_index = 0
         for node in self.nodes:
             self.node_indices.append(current_index)
-            self.QnM += node.dof * [0.0]
+            self.FnM += node.dof * [0.0]
             current_index += node.dof
-        self.QnM = np.array(self.QnM)
+        self.FnM = np.array(self.FnM)
 
     def add_single_force(self, node_idx: int, Fx=0., Fy=0., Fz=0.):
-        if self.QnM is None:
+        if self.FnM is None:
             self.assign_dof()
 
         index = self.node_indices[node_idx - 1]
-        self.QnM[index], self.QnM[index + 1], self.QnM[index + 2] = Fx, Fy, Fz
+        self.FnM[index], self.FnM[index + 1], self.FnM[index + 2] = Fx, Fy, Fz
 
     def add_single_moment(self, node_idx: int, Mx=0., My=0., Mz=0.):
 
@@ -209,11 +209,11 @@ class Frame3D:
             print("Warning: Can not add moment on a bar")
             return
 
-        if self.QnM is None:
+        if self.FnM is None:
             self.assign_dof()
 
         index = self.node_indices[node_idx - 1]
-        self.QnM[index + 3], self.QnM[index + 4], self.QnM[index + 5] = Mx, My, Mz
+        self.FnM[index + 3], self.FnM[index + 4], self.FnM[index + 5] = Mx, My, Mz
 
     def add_distributed_force(self, bc_idx: int, q: float):
 
@@ -221,7 +221,7 @@ class Frame3D:
             print(f"Error: BeamColumn({bc_idx}) does not exist.")
             return
 
-        if self.QnM is None:
+        if self.FnM is None:
             self.assign_dof()
 
         bc = self.elements[bc_idx - 1]
@@ -231,13 +231,13 @@ class Frame3D:
 
         index1, index2 = self.node_indices[self.nodes.index(bc.node1)], self.node_indices[self.nodes.index(bc.node2)]
 
-        self.QnM[index1] += Fx_eq  # 起始节点的水平等效力
-        self.QnM[index1 + 1] += Fy_eq  # 起始节点的竖直等效力
-        self.QnM[index1 + 2] += M_eq  # 起始节点的等效弯矩
+        self.FnM[index1] += Fx_eq  # 起始节点的水平等效力
+        self.FnM[index1 + 1] += Fy_eq  # 起始节点的竖直等效力
+        self.FnM[index1 + 2] += M_eq  # 起始节点的等效弯矩
 
-        self.QnM[index2] += Fx_eq  # 起始节点的水平等效力
-        self.QnM[index2 + 1] += Fy_eq  # 起始节点的竖直等效力
-        self.QnM[index2 + 2] -= M_eq  # 起始节点的等效弯矩
+        self.FnM[index2] += Fx_eq  # 起始节点的水平等效力
+        self.FnM[index2 + 1] += Fy_eq  # 起始节点的竖直等效力
+        self.FnM[index2 + 2] -= M_eq  # 起始节点的等效弯矩
 
     def add_fixed_sup(self, *args):
         for i in args:
@@ -253,9 +253,9 @@ class Frame3D:
             index = sum(node.dof for node in self.nodes[:i - 1])
             self.fixed_dof += [index, index + 1, index + 2]
 
-    def cal_K(self):
+    def cal_K_total(self):
 
-        n = len(self.QnM)
+        n = len(self.FnM)
         K = np.zeros((n, n))
 
         for element in self.elements:
@@ -281,14 +281,14 @@ class Frame3D:
 
         return K
 
-    def solve_una(self):
-        n = len(self.QnM)
+    def solve_disp(self):
+        n = len(self.FnM)
         free_dof = list((set(range(n)).difference(self.fixed_dof)))
 
-        K = self.cal_K()
+        K = self.cal_K_total()
         # print(K[np.ix_(free_dof, free_dof)])
         K_ff = csr_matrix(K[np.ix_(free_dof, free_dof)])
-        F_ff = np.array([self.QnM[i] for i in free_dof])
+        F_ff = np.array([self.FnM[i] for i in free_dof])
         U_ff = spsolve(K_ff, F_ff)
 
         # U_ff[np.abs(U_ff) < tolerance] = 0
@@ -298,10 +298,10 @@ class Frame3D:
 
         return U
 
-    def solve_qnm(self, tolerance=1e-8):
-        n = len(self.QnM)
-        K = csr_matrix(self.cal_K())
-        U = self.solve_una()
+    def solve_reaction(self, tolerance=1e-8):
+        n = len(self.FnM)
+        K = csr_matrix(self.cal_K_total())
+        U = self.solve_disp()
         Q = K @ U
         Q[np.abs(Q) < tolerance] = 0
 
@@ -309,7 +309,7 @@ class Frame3D:
 
     def plot_system(self, initial_scale=1.0, scale_max=10000.0):
         # 计算初始位移向量
-        U = self.solve_una()
+        U = self.solve_disp()
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')  # 3D axes

@@ -19,5 +19,5 @@ s.add_fixed_sup(1, 2, 3)
 
 s.add_node_force(4, Fz=50000)
 
-print("节点位移：", s.solve())
+print("节点位移：", s.solve_disp())
 s.plot_system(scale_max=5000)
