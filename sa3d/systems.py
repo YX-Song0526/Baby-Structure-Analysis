@@ -1,7 +1,5 @@
 import numpy as np
 from numpy import cos, sin
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from sa3d.elements import Node, Bar, BeamColumn
@@ -71,7 +69,7 @@ class Truss3D:
         K = self.cal_K_total()
         K_ff = K[np.ix_(free_dof, free_dof)]
         F_ff = np.array([self.F[i] for i in free_dof])
-        U_ff = np.linalg.pinv(K_ff) @ F_ff
+        U_ff = np.linalg.solve(K_ff, F_ff)
 
         U_ff[np.abs(U_ff) < tolerance] = 0
 
@@ -98,10 +96,17 @@ class Frame3D:
         self.fixed_dof = []
         self.node_indices = []
 
-    def add_node(self, x: float, y: float, z: float):
+    def add_node(self,
+                 x: float,
+                 y: float,
+                 z: float):
         self.nodes.append(Node(x, y, z))
 
-    def add_bar(self, node1_idx: int, node2_idx: int, E, A):
+    def add_bar(self,
+                node1_idx: int,
+                node2_idx: int,
+                E,
+                A):
         # 检查节点索引是否在范围内
         if node1_idx - 1 < 0 or node2_idx - 1 < 0 or node1_idx > len(self.nodes) or node2_idx > len(self.nodes):
             print(f"Error: One or both nodes for Bar({node1_idx}, {node2_idx}) do not exist.")
@@ -131,14 +136,22 @@ class Frame3D:
             current_index += node.dof
         self.FnM = np.array(self.FnM)
 
-    def add_single_force(self, node_idx: int, Fx=0., Fy=0., Fz=0.):
+    def add_single_force(self,
+                         node_idx: int,
+                         Fx=0.,
+                         Fy=0.,
+                         Fz=0.):
         if self.FnM is None:
             self.assign_dof()
 
         index = self.node_indices[node_idx - 1]
         self.FnM[index], self.FnM[index + 1], self.FnM[index + 2] = Fx, Fy, Fz
 
-    def add_single_moment(self, node_idx: int, Mx=0., My=0., Mz=0.):
+    def add_single_moment(self,
+                          node_idx: int,
+                          Mx=0.,
+                          My=0.,
+                          Mz=0.):
 
         if self.nodes[node_idx - 1].dof == 3:
             print("Warning: Can not add moment on a bar")
@@ -234,13 +247,15 @@ class Frame3D:
         return U
 
     def solve_reaction(self, tolerance=1e-8):
-        n = len(self.FnM)
-        K = csr_matrix(self.cal_K_total())
+        """求解支反力"""
+        K = self.cal_K_total()
         U = self.solve_disp()
         Q = K @ U
-        Q[np.abs(Q) < tolerance] = 0
+        f = np.array(self.FnM)
+        R = Q - f
+        R[np.abs(R) < tolerance] = 0
 
-        return Q
+        return R
 
     def plot(self, initial_scale=1.0, scale_max=10000.0):
         U = self.solve_disp()
