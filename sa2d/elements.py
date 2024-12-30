@@ -130,3 +130,12 @@ class BeamColumn:
              [0, 9 / 70, 13 * self.L / 420, 0, 13 / 35, -11 * self.L / 210],
              [0, -13 * self.L / 420, -self.L ** 2 / 140, 0, -11 * self.L / 210, self.L ** 2 / 105]]
         ) if self.density is not None else None
+
+    def assign_section(self,
+                       E: float,
+                       A: float,
+                       I: float):
+        """给单元指定截面并更新参数"""
+        self.E = E
+        self.A = A
+        self.I = I
